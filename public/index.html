@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh" style="height: 100%;overflow: hidden; ">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文章精选</title>
+  <link rel="stylesheet" href="./element.css">
+  <style>
+    .el-tree-node .el-tree-node__label{
+      font-size: 15px;
+      font-weight: bold;
+      color: #333;
+    }
+    .el-tree-node__children .el-tree-node__label{
+      font-size: 14px;
+      width: 100%;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+    }
+    .el-tree-node>.el-tree-node__children{
+      overflow-x: auto!important;
+    }
+    .el-tree-node__children .el-tree-node{
+      display: flex;
+      align-items: center;
+      height: auto;
+      margin-top: 10px;
+      color: #2f2f2f;
+      font-weight: 400;
+    }
+    .el-tree-node__children .el-tree-node__content{
+      height: auto;
+    }
+    .el-loading-spinner{
+      top: 200px!important;
+    }
+    .el-tree-node{
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body style="height: 100%; overflow: hidden;">
+<div id="app" style="height: 100%; overflow: hidden;">
+  <h1>文章精选</h1>
+  <el-row :gutter="10" style="height: 100%;">
+    <el-col :span="5" style="height:calc(100% - 120px); overflow-y: auto;">
+      <el-tree
+        v-loading="loading"
+        element-loading-text="加载中,请稍候"
+        :data="treeData"
+        :props="defaultProps"
+        @node-click="handleNodeClick"
+        accordion
+      ></el-tree>
+    </el-col>
+    <el-col :span="19" style="height: 100%">
+      <iframe id="content" :src="url"  width="100%" style="height:calc(100% - 120px);" frameborder="0" scrolling="auto"></iframe>
+    </el-col>
+  </el-row>
+</div>
+<script src="./vue.js"></script>
+<script src="./element.js"></script>
+<script>
+  new Vue({
+    el: '#app',
+    data() {
+      return {
+        treeData: [],
+        loading: true,
+        url: '',
+        defaultProps: {
+          children: 'children',
+          label: 'name',
+        },
+      };
+    },
+    async created() {
+      await this.fetchFileStructure();
+    },
+    methods: {
+      async fetchFileStructure() {
+        const response = await fetch('/files');
+        let data = await response.json();
+        this.treeData = this.removeDSStore(data);
+        this.loading = false
+      },
+      removeDSStore(arr, dirname) {
+        return arr
+          .filter(item => item.name !== '.DS_Store' && item.name !== 'images')
+          .map(item => {
+            if (item.children) {
+              return { ...item, dirname: dirname, children: this.removeDSStore(item.children, item.name) };
+            }
+            return item;
+          });
+      },
+      handleNodeClick(data) {
+        if (!data.isDirectory) {
+          this.url = `/files/${data.dirname}/${data.name}`;
+        }
+      }
+    }
+  })
+</script>
+</body>
+</html>
